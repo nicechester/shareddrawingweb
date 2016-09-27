@@ -1,6 +1,3 @@
-<canvas id="canvas" width="1024" height="768" style="border: 1px solid black;"></canvas>
-<div id="coord"></div>
-<script>
 var canvas = document.getElementById('canvas'),
     coord = document.getElementById('coord'),
     ctx = canvas.getContext('2d'), // get 2D context
@@ -56,4 +53,3 @@ function fixPosition(e, gCanvasElement) {
     y -= gCanvasElement.offsetTop;
     return {x: x, y:y};
 }
-</script>
