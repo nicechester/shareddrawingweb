@@ -1,6 +1,12 @@
-<canvas id="canvas" width="1024" height="768" style="border: 1px solid black;"></canvas>
-<div id="coord"></div>
-<script>
+// Initialize Firebase
+var config = {
+    apiKey: "AIzaSyBRCJitAeFM67FqtIBwsZgxu3Sw9IE080Y",
+    authDomain: "shareddrawing.firebaseapp.com",
+    databaseURL: "https://shareddrawing.firebaseio.com/",
+    storageBucket: "shareddrawing.appspot.com",
+};
+firebase.initializeApp(config);
+
 var canvas = document.getElementById('canvas'),
     coord = document.getElementById('coord'),
     ctx = canvas.getContext('2d'), // get 2D context
@@ -12,10 +18,55 @@ imgCat.onload = function() { // wait for image load
     ctx.drawImage(imgCat, 0, 0); // draw imgCat on (0, 0)
 };
 
+var canvasID = "1";
+
+var ref = firebase.database().ref('/' + canvasID + '/paths/');
+ref.on('child_added', function(snapshot) {
+	updateCanvas(snapshot.val());
+});
+
+ref.on('child_changed', function(snapshot) {
+	updateCanvas(snapshot.val());
+});
+
+ref.on('child_removed', function(snapshot) {
+	ctx.clearRect(0, 0, canvas.width, canvas.height);	
+});
+
+function updateCanvas(pathInfo) {
+	var color = pathInfo['color'];
+	switch (color) {
+		case "Red":
+			ctx.strokeStyle = '#FF0000';
+			break;
+		case "Blue":
+			ctx.strokeStyle = '#0000FF';
+			break;
+		case "Orange":
+			ctx.strokeStyle = '#FFA500';
+			break;
+		case "Yellow":
+			ctx.strokeStyle = '#FFFF00';
+			break;
+
+	}
+
+	var points = pathInfo['points'];
+	ctx.lineWidth = 3;
+	ctx.beginPath();
+	for (var i in points) {
+		var x = parseFloat(points[i][0]);
+		var y = parseFloat(points[i][1]);
+		ctx.lineTo(x, y)
+	}
+	ctx.stroke();
+}
+
+
 /*********** handle mouse events on canvas **************/
 var mousedown = false;
 ctx.strokeStyle = '#0000FF';
-ctx.lineWidth = 5;
+ctx.lineWidth = 3;
 canvas.onmousedown = function(e) {
     var pos = fixPosition(e, canvas);
     mousedown = true;
@@ -56,4 +107,3 @@ function fixPosition(e, gCanvasElement) {
     y -= gCanvasElement.offsetTop;
     return {x: x, y:y};
 }
-</script>
