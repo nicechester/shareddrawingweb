@@ -18,7 +18,8 @@ imgCat.onload = function() { // wait for image load
     ctx.drawImage(imgCat, 0, 0); // draw imgCat on (0, 0)
 };
 
-var canvasID = "1";
+var canvasID = getCanvasID();
+//var canvasID = "1";
 var lines = [];
 
 var ref = firebase.database().ref('/' + canvasID + '/paths/');
@@ -63,6 +64,23 @@ function updateCanvas(pathInfo) {
 	ctx.stroke();
 }
 
+/*********** load canvas by query param **************/
+
+function getParameterByName(name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+function getCanvasID() {
+	id = getParameterByName('id');
+	if (!id) id = "1";
+	return id;
+}
 
 /*********** handle mouse events on canvas **************/
 var mousedown = false;
