@@ -19,6 +19,7 @@ imgCat.onload = function() { // wait for image load
 };
 
 var canvasID = "1";
+var lines = [];
 
 var ref = firebase.database().ref('/' + canvasID + '/paths/');
 ref.on('child_added', function(snapshot) {
@@ -72,6 +73,7 @@ canvas.onmousedown = function(e) {
     mousedown = true;
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
+	lines.push([pos.x, pos.y]);
     return false;
 };
 
@@ -81,11 +83,20 @@ canvas.onmousemove = function(e) {
     if (mousedown) {
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
+		lines.push([pos.x, pos.y]);
     }
 };
 
 canvas.onmouseup = function(e) {
     mousedown = false;
+	ref = firebase.database().ref('/' + canvasID + '/paths/');
+	var pathID = ref.push().key;
+	var updates = {};
+  		updates[pathID + '/color/'] = "Blue";
+		updates[pathID + '/user/'] = "web";
+		updates[pathID + '/points/'] = lines;
+	ref.update(updates);
+	lines = [];
 };
 
 /********** utils ******************/
