@@ -38,6 +38,9 @@ ref.on('child_removed', function(snapshot) {
 function updateCanvas(pathInfo) {
 	var color = pathInfo['color'];
 	switch (color) {
+		case "Black":
+			ctx.strokeStyle = '#000000';
+			break;
 		case "Red":
 			ctx.strokeStyle = '#FF0000';
 			break;
