@@ -39,9 +39,7 @@ ref.on('child_removed', function(snapshot) {
 function changeAllPaths() {
 	ref.on('value', function(snapshot) {
 		var points = snapshot.val();
-		for(var k in points) {
-			updateCanvas(points[k]);
-		}
+		Object.keys(points).forEach((k) => updateCanvas(points[k]));
 	});
 	
 }
