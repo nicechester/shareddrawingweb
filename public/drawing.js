@@ -33,7 +33,18 @@ ref.on('child_changed', function(snapshot) {
 
 ref.on('child_removed', function(snapshot) {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);	
+	changeAllPaths();
 });
+
+function changeAllPaths() {
+	ref.on('value', function(snapshot) {
+		var points = snapshot.val();
+		for(var k in points) {
+			updateCanvas(points[k]);
+		}
+	});
+	
+}
 
 function updateCanvas(pathInfo) {
 	var color = pathInfo['color'];
