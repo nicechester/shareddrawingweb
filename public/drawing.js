@@ -12,14 +12,7 @@ var canvas = document.getElementById('canvas'),
     ctx = canvas.getContext('2d'), // get 2D context
     imgCat = new Image();
 
-/*********** draw image *************/
-imgCat.src = 'http://c.wearehugh.com/dih5/openclipart.org_media_files_johnny_automatic_1360.png';
-imgCat.onload = function() { // wait for image load
-    ctx.drawImage(imgCat, 0, 0); // draw imgCat on (0, 0)
-};
-
 var canvasID = getCanvasID();
-//var canvasID = "1";
 var lines = [];
 
 var ref = firebase.database().ref('/' + canvasID + '/paths/');
@@ -109,7 +102,7 @@ canvas.onmousedown = function(e) {
 
 canvas.onmousemove = function(e) {
     var pos = fixPosition(e, canvas);
-    coord.innerHTML = '(' + pos.x + ',' + pos.y + ')';
+    coord.innerHTML = canvasID + ' (' + pos.x + ',' + pos.y + ')';
     if (mousedown) {
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
