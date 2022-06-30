@@ -7,7 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/5.5.4/firebase.js"></script>
   <!-- ACE and its JavaScript mode and theme files -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.5/ace.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.5/mode-javascript.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.5/mode-java.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.5/theme-textmate.js"></script>
 
   <!-- Firepad -->
@@ -49,11 +49,11 @@
       var session = editor.getSession();
       session.setUseWrapMode(true);
       session.setUseWorker(false);
-      session.setMode("ace/mode/javascript");
+      session.setMode("ace/mode/java");
 
       //// Create Firepad.
       var firepad = Firepad.fromACE(firepadRef, editor, {
-        defaultText: '// JavaScript Editing with Firepad!\nfunction go() {\n  var message = "Hello, world.";\n  console.log(message);\n}'
+        defaultText: 'public class Question {\n }\n}'
       });
     }
 
