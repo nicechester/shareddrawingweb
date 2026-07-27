@@ -1,150 +1,112 @@
-// Initialize Firebase
-var config = {
-    apiKey: "AIzaSyBRCJitAeFM67FqtIBwsZgxu3Sw9IE080Y",
-    authDomain: "shareddrawing.firebaseapp.com",
-    databaseURL: "https://shareddrawing.firebaseio.com/",
-    storageBucket: "shareddrawing.appspot.com",
-};
-firebase.initializeApp(config);
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import { getDatabase, ref, push, set, onChildAdded, onChildChanged, onChildRemoved, onValue } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
-var canvas = document.getElementById('canvas'),
-    coord = document.getElementById('coord'),
-    ctx = canvas.getContext('2d'), // get 2D context
-    imgCat = new Image();
-
-/*********** draw image *************/
-imgCat.src = 'http://c.wearehugh.com/dih5/openclipart.org_media_files_johnny_automatic_1360.png';
-imgCat.onload = function() { // wait for image load
-    ctx.drawImage(imgCat, 0, 0); // draw imgCat on (0, 0)
+const firebaseConfig = {
+    apiKey: "AIzaSyBogMAH-Oc7UCeQZpoylhR3EJHWogtIRcQ",
+    authDomain: "shared-drawing.firebaseapp.com",
+    databaseURL: "https://shared-drawing-default-rtdb.firebaseio.com",
+    projectId: "shared-drawing",
+    storageBucket: "shared-drawing.firebasestorage.app",
+    messagingSenderId: "1006489746800",
+    appId: "1:1006489746800:web:c9e0f9e2334cbf86fd63b5",
 };
 
-var canvasID = getCanvasID();
-//var canvasID = "1";
-var lines = [];
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
-var ref = firebase.database().ref('/' + canvasID + '/paths/');
-ref.on('child_added', function(snapshot) {
-	updateCanvas(snapshot.val());
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const canvasID = getCanvasID();
+let currentColor = "#000000";
+let currentPoints = [];
+let strokeStartTime = null;
+let userId = null;
+let allStrokes = {};
+
+signInAnonymously(auth).then(result => { userId = result.user.uid; });
+
+// Color picker
+document.querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        currentColor = this.dataset.color;
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+        this.classList.add('selected');
+    });
 });
 
-ref.on('child_changed', function(snapshot) {
-	updateCanvas(snapshot.val());
-});
+// Firebase listeners
+const strokesRef = ref(db, `v2/canvases/${canvasID}/strokes`);
 
-ref.on('child_removed', function(snapshot) {
-	ctx.clearRect(0, 0, canvas.width, canvas.height);	
-	changeAllPaths();
-});
+onValue(strokesRef, snapshot => { allStrokes = snapshot.val() || {}; });
+onChildAdded(strokesRef, snapshot => drawStroke(snapshot.val()));
+onChildChanged(strokesRef, () => redrawAll());
+onChildRemoved(strokesRef, () => redrawAll());
 
-function changeAllPaths() {
-	ref.on('value', function(snapshot) {
-		var points = snapshot.val();
-		Object.keys(points).forEach((k) => updateCanvas(points[k]));
-	});
-	
+function redrawAll() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    Object.values(allStrokes).forEach(drawStroke);
 }
 
-function updateCanvas(pathInfo) {
-	var color = pathInfo['color'];
-	switch (color) {
-		case "Black":
-			ctx.strokeStyle = '#000000';
-			break;
-		case "Red":
-			ctx.strokeStyle = '#FF0000';
-			break;
-		case "Blue":
-			ctx.strokeStyle = '#0000FF';
-			break;
-		case "Orange":
-			ctx.strokeStyle = '#FFA500';
-			break;
-		case "Yellow":
-			ctx.strokeStyle = '#FFFF00';
-			break;
-
-	}
-
-	var points = pathInfo['points'];
-	ctx.lineWidth = 3;
-	ctx.beginPath();
-	for (var i in points) {
-		var x = parseFloat(points[i][0]);
-		var y = parseFloat(points[i][1]);
-		ctx.lineTo(x, y)
-	}
-	ctx.stroke();
+function drawStroke(stroke) {
+    if (!stroke?.points || stroke.points.length < 2) return;
+    ctx.strokeStyle = stroke.color;
+    ctx.lineWidth = stroke.width || 2;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    stroke.points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.stroke();
 }
 
-/*********** load canvas by query param **************/
+// Mouse events
+let mousedown = false;
 
-function getParameterByName(name, url) {
-    if (!url) url = window.location.href;
-    name = name.replace(/[\[\]]/g, "\\$&");
-    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-        results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, " "));
-}
-
-function getCanvasID() {
-	id = getParameterByName('id');
-	if (!id) id = "1";
-	return id;
-}
-
-/*********** handle mouse events on canvas **************/
-var mousedown = false;
-ctx.strokeStyle = '#0000FF';
-ctx.lineWidth = 3;
 canvas.onmousedown = function(e) {
-    var pos = fixPosition(e, canvas);
     mousedown = true;
+    strokeStartTime = Date.now();
+    currentPoints = [];
+    const pos = getPos(e);
+    currentPoints.push({ x: pos.x, y: pos.y, t: 0 });
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
-	lines.push([pos.x, pos.y]);
-    return false;
 };
 
 canvas.onmousemove = function(e) {
-    var pos = fixPosition(e, canvas);
-    coord.innerHTML = '(' + pos.x + ',' + pos.y + ')';
-    if (mousedown) {
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-		lines.push([pos.x, pos.y]);
-    }
+    if (!mousedown) return;
+    const pos = getPos(e);
+    currentPoints.push({ x: pos.x, y: pos.y, t: Date.now() - strokeStartTime });
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
 };
 
-canvas.onmouseup = function(e) {
+canvas.onmouseup = function() {
+    if (!mousedown) return;
     mousedown = false;
-	ref = firebase.database().ref('/' + canvasID + '/paths/');
-	var pathID = ref.push().key;
-	var updates = {};
-  		updates[pathID + '/color/'] = "Blue";
-		updates[pathID + '/user/'] = "web";
-		updates[pathID + '/points/'] = lines;
-	ref.update(updates);
-	lines = [];
+    set(push(strokesRef), {
+        userId: userId || 'anonymous',
+        color: currentColor,
+        width: 2,
+        points: currentPoints,
+        isComplete: true,
+        createdAt: strokeStartTime / 1000,
+    });
+    currentPoints = [];
 };
 
-/********** utils ******************/
-// Thanks to http://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element/4430498#4430498
-function fixPosition(e, gCanvasElement) {
-    var x;
-    var y;
-    if (e.pageX || e.pageY) { 
-      x = e.pageX;
-      y = e.pageY;
-    }
-    else { 
-      x = e.clientX + document.body.scrollLeft +
-          document.documentElement.scrollLeft;
-      y = e.clientY + document.body.scrollTop +
-          document.documentElement.scrollTop;
-    } 
-    x -= gCanvasElement.offsetLeft;
-    y -= gCanvasElement.offsetTop;
-    return {x: x, y:y};
+// Utils
+function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function getCanvasID() {
+    const match = /[?&]id=([^&#]*)/.exec(window.location.href);
+    return match ? decodeURIComponent(match[1]) : "1";
 }
