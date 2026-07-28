@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "WSJ4FXTHUT.io.github.nicechester.shareddrawing",
+        "appIDs": "K92B539W6W.io.github.nicechester.shareddrawing",
         "paths": [ "/", "/*" ]
       }
     ]
