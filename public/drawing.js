@@ -32,6 +32,19 @@ document.querySelectorAll('.color-btn').forEach(function(btn) {
 });
 
 var strokesRef = firebase.database().ref('v2/canvases/' + canvasID + '/strokes');
+var metaRef = firebase.database().ref('v2/canvases/' + canvasID + '/meta');
+var bgImage = null;
+
+metaRef.on('value', function(snapshot) {
+    var meta = snapshot.val();
+    var url = meta && meta.backgroundImageUrl;
+    if (!url) { bgImage = null; return; }
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() { bgImage = img; redrawAll(); };
+    img.onerror = function() { bgImage = null; };
+    img.src = url;
+});
 
 strokesRef.on('value', function(snapshot) { allStrokes = snapshot.val() || {}; });
 strokesRef.on('child_added', function(snapshot) { drawStroke(snapshot.val()); });
@@ -40,6 +53,7 @@ strokesRef.on('child_removed', function() { redrawAll(); });
 
 function redrawAll() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (bgImage) ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
     Object.values(allStrokes).forEach(drawStroke);
 }
 
