@@ -3,8 +3,13 @@
     "apps": [],
     "details": [
       {
-        "appIDs": "K92B539W6W.io.github.nicechester.shareddrawing",
-        "paths": [ "/", "/*" ]
+        "appID": "K92B539W6W.io.github.nicechester.shareddrawing",
+        "components": [
+          {
+            "/": "/*",
+            "comment": "Matches all paths"
+          }
+        ]
       }
     ]
   }
