@@ -4,7 +4,7 @@
     "details": [
       {
         "appID": "WSJ4FXTHUT.io.github.nicechester.shareddrawing",
-        "paths": ["/?id=*"]
+        "paths": [ "/", "/*" ]
       }
     ]
   }
