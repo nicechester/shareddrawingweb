@@ -12,12 +12,9 @@ firebase.initializeApp(firebaseConfig);
 var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext('2d');
 
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    redrawAll();
-}
-window.addEventListener('resize', resizeCanvas);
+canvas.width = window.screen.width * window.devicePixelRatio;
+canvas.height = window.screen.height * window.devicePixelRatio;
+
 
 var canvasID = getCanvasID();
 var currentColor = "#000000";
@@ -54,11 +51,8 @@ metaRef.on('value', function(snapshot) {
 
 strokesRef.on('value', function(snapshot) {
     allStrokes = snapshot.val() || {};
-    if (canvas.width === 0) resizeCanvas();
     redrawAll();
 });
-
-resizeCanvas();
 
 function redrawAll() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
