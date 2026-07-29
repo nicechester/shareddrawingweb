@@ -1,5 +1,5 @@
 # shareddrawingweb
-* https://shareddrawing.firebaseapp.com 
+* https://shared-drawing.web.app
 
 # firepad (ace)
-* https://shareddrawing.firebaseapp.com/ace.html
+* https://shared-drawing.web.app/ace.html
