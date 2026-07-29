@@ -127,6 +127,9 @@ function redrawAll() {
         ctx.drawImage(bgImage, 0, 0, canvas.width / window.devicePixelRatio / fitScale, canvas.height / window.devicePixelRatio / fitScale);
     }
     Object.values(allStrokes).forEach(drawStroke);
+    if (currentPoints.length > 1) {
+        drawStroke({ color: currentColor, width: 2, points: currentPoints });
+    }
     ctx.restore();
 }
 
@@ -151,20 +154,14 @@ canvas.onmousedown = function(e) {
     currentPoints = [];
     var pos = getPos(e);
     currentPoints.push({ x: pos.x, y: pos.y, t: 0 });
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
+    redrawAll();
 };
 
 canvas.onmousemove = function(e) {
     if (!mousedown) return;
     var pos = getPos(e);
     currentPoints.push({ x: pos.x, y: pos.y, t: Date.now() - strokeStartTime });
-    ctx.strokeStyle = currentColor;
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
+    redrawAll();
 };
 
 canvas.ontouchstart = function(e) { e.preventDefault(); canvas.onmousedown(e.touches[0]); };
