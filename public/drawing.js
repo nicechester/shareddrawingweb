@@ -40,7 +40,6 @@ metaRef.on('value', function(snapshot) {
     var url = meta && meta.backgroundImageUrl;
     if (!url) { bgImage = null; return; }
     var img = new Image();
-    img.crossOrigin = 'anonymous';
     img.onload = function() { bgImage = img; redrawAll(); };
     img.onerror = function() { bgImage = null; };
     img.src = url;
