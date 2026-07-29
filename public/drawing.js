@@ -28,10 +28,26 @@ var allStrokes = {};
 var imageWidth = null;
 var imageHeight = null;
 var fitScale = 1;
+var userZoom = 1;
+var ZOOM_INCREMENT = 1.2;
+var ZOOM_DECREMENT = 1 / ZOOM_INCREMENT;
+
+function loadZoomLevel() {
+    var stored = sessionStorage.getItem('zoomLevel_' + canvasID);
+    if (stored) {
+        userZoom = parseFloat(stored);
+    }
+}
+
+function saveZoomLevel() {
+    sessionStorage.setItem('zoomLevel_' + canvasID, userZoom);
+}
 
 firebase.auth().signInAnonymously().then(function(result) {
     userId = result.user.uid;
 });
+
+loadZoomLevel();
 
 document.querySelectorAll('.color-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -40,6 +56,34 @@ document.querySelectorAll('.color-btn').forEach(function(btn) {
         this.classList.add('selected');
     });
 });
+
+var zoomInBtn = document.getElementById('zoom-in');
+var zoomOutBtn = document.getElementById('zoom-out');
+var zoomResetBtn = document.getElementById('zoom-reset');
+
+if (zoomInBtn) {
+    zoomInBtn.addEventListener('click', function() {
+        userZoom *= ZOOM_INCREMENT;
+        saveZoomLevel();
+        redrawAll();
+    });
+}
+
+if (zoomOutBtn) {
+    zoomOutBtn.addEventListener('click', function() {
+        userZoom *= ZOOM_DECREMENT;
+        saveZoomLevel();
+        redrawAll();
+    });
+}
+
+if (zoomResetBtn) {
+    zoomResetBtn.addEventListener('click', function() {
+        userZoom = 1;
+        saveZoomLevel();
+        redrawAll();
+    });
+}
 
 var strokesRef = firebase.database().ref('v2/canvases/' + canvasID + '/strokes');
 var metaRef = firebase.database().ref('v2/canvases/' + canvasID + '/meta');
@@ -75,7 +119,8 @@ function updateFitScale() {
 function redrawAll() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
-    ctx.scale(fitScale, fitScale);
+    var effectiveScale = fitScale * userZoom;
+    ctx.scale(effectiveScale, effectiveScale);
     if (bgImage && imageWidth && imageHeight) {
         ctx.drawImage(bgImage, 0, 0, imageWidth, imageHeight);
     } else if (bgImage) {
@@ -145,7 +190,8 @@ function getPos(e) {
     var rect = canvas.getBoundingClientRect();
     var screenX = e.clientX - rect.left;
     var screenY = e.clientY - rect.top;
-    return { x: (screenX * window.devicePixelRatio) / fitScale, y: (screenY * window.devicePixelRatio) / fitScale };
+    var effectiveScale = fitScale * userZoom;
+    return { x: (screenX * window.devicePixelRatio) / effectiveScale, y: (screenY * window.devicePixelRatio) / effectiveScale };
 }
 
 function getCanvasID() {
