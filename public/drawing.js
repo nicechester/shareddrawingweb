@@ -14,6 +14,8 @@ var ctx = canvas.getContext('2d');
 
 canvas.width = window.screen.width * window.devicePixelRatio;
 canvas.height = window.screen.height * window.devicePixelRatio;
+canvas.style.width = window.screen.width + 'px';
+canvas.style.height = window.screen.height + 'px';
 
 
 var canvasID = getCanvasID();
@@ -22,6 +24,10 @@ var currentPoints = [];
 var strokeStartTime = null;
 var userId = null;
 var allStrokes = {};
+
+var imageWidth = null;
+var imageHeight = null;
+var fitScale = 1;
 
 firebase.auth().signInAnonymously().then(function(result) {
     userId = result.user.uid;
@@ -41,8 +47,11 @@ var bgImage = null;
 
 metaRef.on('value', function(snapshot) {
     var meta = snapshot.val();
+    imageWidth = meta && meta.imageWidth;
+    imageHeight = meta && meta.imageHeight;
+    updateFitScale();
     var url = meta && meta.backgroundImageUrl;
-    if (!url) { bgImage = null; return; }
+    if (!url) { bgImage = null; redrawAll(); return; }
     var img = new Image();
     img.onload = function() { bgImage = img; redrawAll(); };
     img.onerror = function() { bgImage = null; };
@@ -54,10 +63,26 @@ strokesRef.on('value', function(snapshot) {
     redrawAll();
 });
 
+function updateFitScale() {
+    if (imageWidth && imageHeight) {
+        var canvasScreenWidth = canvas.width / window.devicePixelRatio;
+        fitScale = canvasScreenWidth / imageWidth;
+    } else {
+        fitScale = 1;
+    }
+}
+
 function redrawAll() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (bgImage) ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.scale(fitScale, fitScale);
+    if (bgImage && imageWidth && imageHeight) {
+        ctx.drawImage(bgImage, 0, 0, imageWidth, imageHeight);
+    } else if (bgImage) {
+        ctx.drawImage(bgImage, 0, 0, canvas.width / window.devicePixelRatio / fitScale, canvas.height / window.devicePixelRatio / fitScale);
+    }
     Object.values(allStrokes).forEach(drawStroke);
+    ctx.restore();
 }
 
 function drawStroke(stroke) {
@@ -118,7 +143,9 @@ canvas.onmouseup = function() {
 
 function getPos(e) {
     var rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    var screenX = e.clientX - rect.left;
+    var screenY = e.clientY - rect.top;
+    return { x: (screenX * window.devicePixelRatio) / fitScale, y: (screenY * window.devicePixelRatio) / fitScale };
 }
 
 function getCanvasID() {
