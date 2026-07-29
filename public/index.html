@@ -8,6 +8,30 @@
     }
     .color-btn.selected { border-color: white; box-shadow: 0 0 0 2px #333; }
     canvas { display: block; }
+    #zoom-controls {
+        position: fixed;
+        bottom: 12px;
+        right: 12px;
+        display: flex;
+        gap: 8px;
+        z-index: 10;
+    }
+    .zoom-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        background: white;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        outline: none;
+    }
+    .zoom-btn:hover { background: #f0f0f0; }
+    .zoom-btn:active { background: #e0e0e0; }
 </style>
 
 <div id="color-picker">
@@ -16,6 +40,12 @@
     <button class="color-btn" data-color="#34C759" style="background:#34C759"></button>
     <button class="color-btn" data-color="#007AFF" style="background:#007AFF"></button>
     <button class="color-btn" data-color="#FFCC00" style="background:#FFCC00"></button>
+</div>
+
+<div id="zoom-controls">
+    <button class="zoom-btn" id="zoom-in" title="Zoom in">+</button>
+    <button class="zoom-btn" id="zoom-out" title="Zoom out">−</button>
+    <button class="zoom-btn" id="zoom-reset" title="Reset zoom">R</button>
 </div>
 
 <canvas id="canvas"></canvas>
