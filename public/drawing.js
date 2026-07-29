@@ -45,10 +45,10 @@ metaRef.on('value', function(snapshot) {
     img.src = url;
 });
 
-strokesRef.on('value', function(snapshot) { allStrokes = snapshot.val() || {}; });
-strokesRef.on('child_added', function(snapshot) { drawStroke(snapshot.val()); });
-strokesRef.on('child_changed', function() { redrawAll(); });
-strokesRef.on('child_removed', function() { redrawAll(); });
+strokesRef.on('value', function(snapshot) {
+    allStrokes = snapshot.val() || {};
+    redrawAll();
+});
 
 function redrawAll() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
