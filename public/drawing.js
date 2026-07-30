@@ -87,7 +87,9 @@ if (zoomResetBtn) {
 
 var strokesRef = firebase.database().ref('v2/canvases/' + canvasID + '/strokes');
 var metaRef = firebase.database().ref('v2/canvases/' + canvasID + '/meta');
+var textObjectsRef = firebase.database().ref('v2/canvases/' + canvasID + '/textObjects');
 var bgImage = null;
+var allTextObjects = {};
 
 metaRef.on('value', function(snapshot) {
     var meta = snapshot.val();
@@ -104,6 +106,11 @@ metaRef.on('value', function(snapshot) {
 
 strokesRef.on('value', function(snapshot) {
     allStrokes = snapshot.val() || {};
+    redrawAll();
+});
+
+textObjectsRef.on('value', function(snapshot) {
+    allTextObjects = snapshot.val() || {};
     redrawAll();
 });
 
@@ -128,22 +135,83 @@ function redrawAll() {
     }
     Object.values(allStrokes).forEach(drawStroke);
     if (currentPoints.length > 1) {
-        drawStroke({ color: currentColor, width: 2, points: currentPoints });
+        drawStroke({ color: currentColor, style: 'default', points: currentPoints });
     }
     ctx.restore();
+
+    Object.values(allTextObjects).forEach(drawTextObject);
 }
+
+var PEN_STYLES = {
+    default: { width: 2, opacity: 1.0, blendMode: 'source-over' },
+    marker: { width: 8, opacity: 0.4, blendMode: 'lighten' },
+    calligraphy: { minWidth: 1, maxWidth: 6, opacity: 1.0, blendMode: 'source-over' },
+    fountainPen: { width: 3, opacity: 0.7, blendMode: 'source-over' }
+};
 
 function drawStroke(stroke) {
     if (!stroke || !stroke.points || stroke.points.length < 2) return;
+
+    var style = PEN_STYLES[stroke.style] || PEN_STYLES.default;
+    var isCalligraphy = stroke.style === 'calligraphy';
+
+    ctx.save();
     ctx.strokeStyle = stroke.color;
-    ctx.lineWidth = stroke.width || 2;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    ctx.beginPath();
-    stroke.points.forEach(function(p, i) {
-        i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
-    });
-    ctx.stroke();
+    ctx.globalAlpha = style.opacity;
+    ctx.globalCompositeOperation = style.blendMode;
+
+    if (isCalligraphy) {
+        drawCalligraphyStroke(stroke, style);
+    } else {
+        ctx.lineWidth = style.width;
+        ctx.beginPath();
+        stroke.points.forEach(function(p, i) {
+            i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+function drawCalligraphyStroke(stroke, style) {
+    var points = stroke.points;
+    for (var i = 0; i < points.length - 1; i++) {
+        var p1 = points[i];
+        var p2 = points[i + 1];
+        var dx = p2.x - p1.x;
+        var dy = p2.y - p1.y;
+        var angle = Math.atan2(dy, dx);
+        var width = style.minWidth + (style.maxWidth - style.minWidth) * (0.5 + 0.5 * Math.cos(angle * 2));
+
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+    }
+}
+
+function drawTextObject(textObj) {
+    if (!textObj || !textObj.text) return;
+
+    var effectiveScale = fitScale * userZoom;
+    var screenX = textObj.x * effectiveScale;
+    var screenY = textObj.y * effectiveScale;
+
+    ctx.save();
+    ctx.fillStyle = textObj.color || '#000000';
+    var fontSize = (textObj.fontSize || 24) * 2;
+    ctx.font = fontSize + 'px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 1.0;
+    ctx.globalCompositeOperation = 'source-over';
+
+    ctx.fillText(textObj.text, screenX, screenY);
+    ctx.restore();
 }
 
 var mousedown = false;
