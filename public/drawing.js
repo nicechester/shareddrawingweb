@@ -137,8 +137,9 @@ function redrawAll() {
     if (currentPoints.length > 1) {
         drawStroke({ color: currentColor, style: 'default', points: currentPoints });
     }
-    Object.values(allTextObjects).forEach(drawTextObject);
     ctx.restore();
+
+    Object.values(allTextObjects).forEach(drawTextObject);
 }
 
 var PEN_STYLES = {
@@ -196,15 +197,20 @@ function drawCalligraphyStroke(stroke, style) {
 function drawTextObject(textObj) {
     if (!textObj || !textObj.text) return;
 
+    var effectiveScale = fitScale * userZoom;
+    var screenX = textObj.x * effectiveScale;
+    var screenY = textObj.y * effectiveScale;
+
     ctx.save();
     ctx.fillStyle = textObj.color || '#000000';
-    ctx.font = (textObj.fontSize || 16) + 'px system-ui';
+    var fontSize = (textObj.fontSize || 24) * 2;
+    ctx.font = fontSize + 'px system-ui';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.globalAlpha = 1.0;
     ctx.globalCompositeOperation = 'source-over';
 
-    ctx.fillText(textObj.text, textObj.x, textObj.y);
+    ctx.fillText(textObj.text, screenX, screenY);
     ctx.restore();
 }
 
