@@ -248,6 +248,7 @@ canvas.onmouseup = function() {
         isComplete: true,
         createdAt: strokeStartTime / 1000,
     });
+    metaRef.update({ lastActivityAt: Math.floor(Date.now() / 1000) });
     currentPoints = [];
 };
 

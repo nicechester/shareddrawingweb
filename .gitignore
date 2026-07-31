@@ -1,3 +1,4 @@
 *.swp
 .firebase/
 cors.json
+shared-drawing-firebase-adminsdk-*.json
