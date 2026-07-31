@@ -1,0 +1,66 @@
+name: Canvas Retention Policy
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Run at 2 AM UTC daily
+  workflow_dispatch:
+
+jobs:
+  cleanup-inactive-canvases:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install firebase-admin
+
+      - name: Delete inactive canvases
+        env:
+          FIREBASE_DATABASE_URL: https://shared-drawing-default-rtdb.firebaseio.com
+          FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+          RETENTION_DAYS: 3
+        run: |
+          cat > cleanup.js << 'EOF'
+          const admin = require('firebase-admin');
+
+          const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+            databaseURL: process.env.FIREBASE_DATABASE_URL
+          });
+
+          const db = admin.database();
+          const retentionDays = parseInt(process.env.RETENTION_DAYS);
+          const cutoffTime = Math.floor(Date.now() / 1000) - (retentionDays * 24 * 60 * 60);
+
+          db.ref('v2/canvases').once('value', async (snapshot) => {
+            const canvases = snapshot.val();
+            if (!canvases) {
+              console.log('No canvases found');
+              process.exit(0);
+            }
+
+            const deletedCanvases = [];
+
+            for (const [canvasId, canvasData] of Object.entries(canvases)) {
+              const lastActivityAt = canvasData.meta?.lastActivityAt;
+
+              if (!lastActivityAt || lastActivityAt < cutoffTime) {
+                await db.ref(`v2/canvases/${canvasId}`).remove();
+                deletedCanvases.push(canvasId);
+                console.log(`Deleted canvas: ${canvasId}`);
+              }
+            }
+
+            console.log(`\nCleanup complete. Deleted ${deletedCanvases.length} canvases.`);
+            process.exit(0);
+          });
+          EOF
+
+          node cleanup.js
